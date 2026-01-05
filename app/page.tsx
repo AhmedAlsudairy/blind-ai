@@ -8,6 +8,7 @@ export default function BlindAssistLive() {
   const [active, setActive] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'ar'>('en');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -19,7 +20,7 @@ export default function BlindAssistLive() {
     startAudioCapture, sendVideoFrame,
     error, logs, audioDevices, selectedAudioOutput, setAudioOutput,
     isVideoEnabled, setIsVideoEnabled
-  } = useGeminiLive(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
+  } = useGeminiLive(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '', language);
 
   // Start/Stop Logic
   const toggleSystem = async () => {
@@ -90,6 +91,12 @@ export default function BlindAssistLive() {
       <div className="flex justify-between items-center border-b-2 border-yellow-500 pb-4 mb-4 z-10">
         <h1 className="text-2xl font-black tracking-tighter">BLIND ASSIST <span className="text-white">LIVE</span></h1>
         <div className="flex gap-2 items-center">
+            <button 
+                onClick={() => setLanguage(prev => prev === 'en' ? 'ar' : 'en')}
+                className="px-3 py-1 rounded-full bg-yellow-900/50 text-yellow-400 font-bold text-xs border border-yellow-500/30 hover:bg-yellow-500 hover:text-black transition-colors"
+            >
+                {language === 'en' ? 'EN' : 'AR'}
+            </button>
             <button onClick={() => setIsVideoEnabled(!isVideoEnabled)} className={`p-2 rounded-full transition-colors ${isVideoEnabled ? 'bg-yellow-500 text-black' : 'bg-yellow-900/50 text-yellow-400'}`}>
                 {isVideoEnabled ? <Video size={16} /> : <VideoOff size={16} />}
             </button>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const MODEL = "models/gemini-2.5-flash-native-audio-preview-12-2025";
 const API_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
-export function useGeminiLive(apiKey: string) {
+export function useGeminiLive(apiKey: string, language: 'en' | 'ar' = 'en') {
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +59,10 @@ export function useGeminiLive(apiKey: string) {
       setIsConnected(true);
       setError(null);
       
+      const systemInstruction = language === 'ar' 
+        ? "أنت مساعد ذكي للمكفوفين. مهمتك هي وصف المحيط بدقة ومساعدة المستخدم في التنقل. إذا رأيت أي خطر أو عائق (مثل سيارات، حفر، أو أجسام حادة)، حذر المستخدم فوراً وبصوت واضح. تحدث باللغة العربية."
+        : "You are a helpful AI assistant for a blind person. Your task is to describe the surroundings accurately and help the user navigate. If you detect any danger or obstacles (like cars, holes, or sharp objects), warn the user IMMEDIATELY and clearly. Speak in English.";
+
       // Handshake: Setup Message
       const setupMsg = {
         setup: {
@@ -68,6 +72,9 @@ export function useGeminiLive(apiKey: string) {
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } // Select a voice
             }
+          },
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
           }
         }
       };
@@ -112,7 +119,7 @@ export function useGeminiLive(apiKey: string) {
         addLog(`Disconnected: ${e.code} ${e.reason}`);
         setIsConnected(false);
     };
-  }, [apiKey]);
+  }, [apiKey, language]);
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();
