@@ -2,10 +2,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useFallDetection } from '@/hooks/useFallDetection';
 import { useGeminiLive } from '@/hooks/useGeminiLive';
-import { Eye, Mic, AlertTriangle, Activity } from 'lucide-react';
+import { Eye, Mic, AlertTriangle, Activity, Settings, Terminal } from 'lucide-react';
 
 export default function BlindAssistLive() {
   const [active, setActive] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -14,7 +15,8 @@ export default function BlindAssistLive() {
   // Use a backend proxy for production. For this demo, we use ENV.
   const { 
     connect, disconnect, isConnected, isSpeaking, 
-    startAudioCapture, sendVideoFrame 
+    startAudioCapture, sendVideoFrame,
+    error, logs, audioDevices, selectedAudioOutput, setAudioOutput
   } = useGeminiLive(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
 
   // Start/Stop Logic
@@ -33,10 +35,14 @@ export default function BlindAssistLive() {
 
   // Camera Logic
   const startCamera = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment', width: 640 } 
-    });
-    if (videoRef.current) videoRef.current.srcObject = stream;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment', width: 640 } 
+        });
+        if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch (e) {
+        console.error("Camera failed", e);
+    }
   };
 
   // Video Frame Loop (1 FPS is enough for context, saves bandwidth)
@@ -67,16 +73,57 @@ export default function BlindAssistLive() {
   });
 
   return (
-    <main className="h-screen bg-neutral-900 text-yellow-400 p-4 flex flex-col font-sans">
+    <main className="h-screen bg-neutral-900 text-yellow-400 p-4 flex flex-col font-sans relative overflow-hidden">
       {/* Hidden Video/Canvas for processing */}
       <video ref={videoRef} autoPlay playsInline muted className="hidden" />
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Header */}
-      <div className="flex justify-between items-center border-b-2 border-yellow-500 pb-4 mb-4">
+      <div className="flex justify-between items-center border-b-2 border-yellow-500 pb-4 mb-4 z-10">
         <h1 className="text-2xl font-black tracking-tighter">BLIND ASSIST <span className="text-white">LIVE</span></h1>
-        <div className={`w-4 h-4 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+        <div className="flex gap-2 items-center">
+            <button onClick={() => setShowDebug(!showDebug)} className="p-2 bg-yellow-900/50 rounded-full">
+                <Terminal size={16} />
+            </button>
+            <div className={`w-4 h-4 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+        </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-600 text-white p-2 rounded mb-4 flex items-center gap-2 animate-bounce">
+            <AlertTriangle />
+            <span className="font-bold">{error}</span>
+        </div>
+      )}
+
+      {/* Debug Overlay */}
+      {showDebug && (
+        <div className="absolute top-20 left-4 right-4 bg-black/90 border border-yellow-500 p-4 rounded-lg z-50 max-h-64 overflow-y-auto text-xs font-mono text-green-400">
+            <h3 className="text-white border-b border-gray-700 mb-2 pb-1">System Logs</h3>
+            {logs.map((log, i) => (
+                <div key={i}>{log}</div>
+            ))}
+            
+            {/* Audio Output Selector */}
+            {audioDevices.length > 0 && (
+                <div className="mt-4 pt-2 border-t border-gray-700">
+                    <label className="text-white block mb-1">Audio Output:</label>
+                    <select 
+                        value={selectedAudioOutput} 
+                        onChange={(e) => setAudioOutput(e.target.value)}
+                        className="w-full bg-gray-800 text-white p-1 rounded"
+                    >
+                        {audioDevices.map(device => (
+                            <option key={device.deviceId} value={device.deviceId}>
+                                {device.label || `Speaker ${device.deviceId.slice(0, 5)}...`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+        </div>
+      )}
 
       {/* Main Visualizer */}
       <div className="flex-1 flex flex-col items-center justify-center relative rounded-2xl border-2 border-yellow-900 bg-black/50 overflow-hidden mb-6">
@@ -94,7 +141,7 @@ export default function BlindAssistLive() {
       </div>
 
       {/* Controls */}
-      <div className="h-1/3 grid grid-cols-1 gap-4">
+      <div className="h-1/3 grid grid-cols-1 gap-4 z-10">
         <button 
           onClick={toggleSystem}
           className={`w-full h-full rounded-2xl flex flex-col items-center justify-center text-4xl font-black uppercase tracking-widest transition-all
