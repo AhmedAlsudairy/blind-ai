@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Configuration for Gemini Live API
-const MODEL = "models/gemini-2.0-flash-exp";
+const MODEL = "models/gemini-2.5-flash-native-audio-preview-12-2025";
 const API_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
 export function useGeminiLive(apiKey: string) {
