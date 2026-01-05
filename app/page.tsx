@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useFallDetection } from '@/hooks/useFallDetection';
 import { useGeminiLive } from '@/hooks/useGeminiLive';
-import { Eye, Mic, AlertTriangle, Activity, Settings, Terminal } from 'lucide-react';
+import { Eye, Mic, AlertTriangle, Activity, Settings, Terminal, Video, VideoOff } from 'lucide-react';
 
 export default function BlindAssistLive() {
   const [active, setActive] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -16,7 +17,8 @@ export default function BlindAssistLive() {
   const { 
     connect, disconnect, isConnected, isSpeaking, 
     startAudioCapture, sendVideoFrame,
-    error, logs, audioDevices, selectedAudioOutput, setAudioOutput
+    error, logs, audioDevices, selectedAudioOutput, setAudioOutput,
+    isVideoEnabled, setIsVideoEnabled
   } = useGeminiLive(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
 
   // Start/Stop Logic
@@ -74,15 +76,27 @@ export default function BlindAssistLive() {
 
   return (
     <main className="h-screen bg-neutral-900 text-yellow-400 p-4 flex flex-col font-sans relative overflow-hidden">
-      {/* Hidden Video/Canvas for processing */}
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
+      {/* Video Preview / Processing */}
+      <video 
+        ref={videoRef} 
+        autoPlay 
+        playsInline 
+        muted 
+        className={`absolute top-20 right-4 w-32 h-48 bg-black border-2 border-yellow-500 rounded-lg object-cover z-40 transition-all duration-300 ${showPreview ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`} 
+      />
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Header */}
       <div className="flex justify-between items-center border-b-2 border-yellow-500 pb-4 mb-4 z-10">
         <h1 className="text-2xl font-black tracking-tighter">BLIND ASSIST <span className="text-white">LIVE</span></h1>
         <div className="flex gap-2 items-center">
-            <button onClick={() => setShowDebug(!showDebug)} className="p-2 bg-yellow-900/50 rounded-full">
+            <button onClick={() => setIsVideoEnabled(!isVideoEnabled)} className={`p-2 rounded-full transition-colors ${isVideoEnabled ? 'bg-yellow-500 text-black' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                {isVideoEnabled ? <Video size={16} /> : <VideoOff size={16} />}
+            </button>
+            <button onClick={() => setShowPreview(!showPreview)} className={`p-2 rounded-full transition-colors ${showPreview ? 'bg-yellow-500 text-black' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                <Eye size={16} />
+            </button>
+            <button onClick={() => setShowDebug(!showDebug)} className={`p-2 rounded-full transition-colors ${showDebug ? 'bg-yellow-500 text-black' : 'bg-yellow-900/50 text-yellow-400'}`}>
                 <Terminal size={16} />
             </button>
             <div className={`w-4 h-4 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />

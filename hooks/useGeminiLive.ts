@@ -11,6 +11,7 @@ export function useGeminiLive(apiKey: string) {
   const [logs, setLogs] = useState<string[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioOutput, setSelectedAudioOutput] = useState<string>('');
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -236,6 +237,7 @@ export function useGeminiLive(apiKey: string) {
 
   // 4. Send Video Frames
   const sendVideoFrame = (base64Image: string) => {
+    if (!isVideoEnabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({
             realtimeInput: {
@@ -245,6 +247,7 @@ export function useGeminiLive(apiKey: string) {
                 }]
             }
         }));
+        addLog("Video frame sent");
     }
   };
 
@@ -277,7 +280,9 @@ export function useGeminiLive(apiKey: string) {
     logs,
     audioDevices,
     selectedAudioOutput,
-    setAudioOutput
+    setAudioOutput,
+    isVideoEnabled,
+    setIsVideoEnabled
   };
 }
 
